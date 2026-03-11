@@ -30,9 +30,9 @@ function decodeEmbedding(buf: Buffer): Float64Array {
 
 function extractKeywords(query: string): string[] {
   return query
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length > 2);
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 2);
 }
 
 function keywordScore(content: string, keywords: string[]): number {
@@ -42,9 +42,9 @@ function keywordScore(content: string, keywords: string[]): number {
 }
 
 function scoreChunk(
-    row: ChunkRow,
-    queryEmbedding: Float64Array,
-    keywords: string[]
+  row: ChunkRow,
+  queryEmbedding: Float64Array,
+  keywords: string[]
 ): SearchResult {
   const vectorScore = cosineSimilarity(queryEmbedding, decodeEmbedding(row.embedding));
   const kwScore = keywordScore(row.content, keywords);
@@ -59,15 +59,15 @@ function scoreChunk(
 
 function rankByRelevance(results: SearchResult[], topK: number): SearchResult[] {
   return results
-      .sort((a, b) => b.score - a.score)
-      .slice(0, topK);
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
 }
 
 export async function searchChunks(
-    db: Database,
-    sourceId: number,
-    query: string,
-    opts: { topK?: number; embeddingModel?: string } = {}
+  db: Database,
+  sourceId: number,
+  query: string,
+  opts: { topK?: number; embeddingModel?: string } = {}
 ): Promise<SearchResult[]> {
   const topK = opts.topK ?? config.topK;
   const model = opts.embeddingModel ?? config.embeddingModel;

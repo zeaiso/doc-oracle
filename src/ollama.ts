@@ -1,4 +1,6 @@
+import chalk from "chalk";
 import { config } from "./config";
+import { renderMarkdown } from "./render";
 import type { HealthCheck } from "./types";
 
 function ollamaUrl(path: string): string {
@@ -34,7 +36,22 @@ export async function embed(text: string, model = config.embeddingModel): Promis
   return embedding;
 }
 
-async function readStreamResponse(resp: Response): Promise<string> {
+function showSpinner(): { stop: () => void } {
+  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+  let i = 0;
+  const interval = setInterval(() => {
+    process.stdout.write(`\r  ${chalk.cyan(frames[i++ % frames.length])} Thinking...`);
+  }, 80);
+
+  return {
+    stop() {
+      clearInterval(interval);
+      process.stdout.write("\r" + " ".repeat(20) + "\r");
+    },
+  };
+}
+
+async function collectStreamResponse(resp: Response): Promise<string> {
   let full = "";
   const reader = resp.body!.getReader();
   const decoder = new TextDecoder();
@@ -48,29 +65,26 @@ async function readStreamResponse(resp: Response): Promise<string> {
       try {
         const parsed = JSON.parse(line) as { message?: { content: string }; done: boolean };
         if (parsed.message?.content) {
-          process.stdout.write(parsed.message.content);
           full += parsed.message.content;
         }
       } catch {}
     }
   }
 
-  process.stdout.write("\n");
   return full;
 }
 
 export async function chat(
   model: string,
   systemPrompt: string,
-  userMessage: string,
-  stream = true
+  userMessage: string
 ): Promise<string> {
   const resp = await fetch(ollamaUrl("/api/chat"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
-      stream,
+      stream: true,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
@@ -83,12 +97,14 @@ export async function chat(
     throw new Error(`Ollama chat failed (${resp.status}): ${body}`);
   }
 
-  if (!stream) {
-    const data = (await resp.json()) as { message: { content: string } };
-    return data.message.content;
-  }
+  const spinner = showSpinner();
+  const raw = await collectStreamResponse(resp);
+  spinner.stop();
 
-  return readStreamResponse(resp);
+  const rendered = renderMarkdown(raw);
+  console.log(rendered);
+
+  return raw;
 }
 
 export async function checkModel(model: string): Promise<HealthCheck> {

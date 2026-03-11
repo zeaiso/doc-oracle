@@ -123,9 +123,8 @@ async function cmdChat(name: string) {
         return;
       }
 
-      process.stdout.write("\nAssistant: ");
-      await answerFromDocs(db, source, question);
       console.log();
+      await answerFromDocs(db, source, question);
       loop();
     });
   };
