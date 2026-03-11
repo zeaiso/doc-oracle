@@ -1,0 +1,24 @@
+{
+  "name": "doc-oracle",
+  "version": "1.0.0",
+  "description": "Local documentation RAG — crawl any docs site, index it, and chat with a local LLM that answers only from your docs.",
+  "module": "index.ts",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "scripts": {
+    "start": "bun run index.ts",
+    "crawl": "bun run index.ts crawl",
+    "ask": "bun run index.ts ask",
+    "chat": "bun run index.ts chat"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0"
+  }
+}
