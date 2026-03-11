@@ -69,13 +69,26 @@ export async function searchChunks(
   query: string,
   opts: { topK?: number; embeddingModel?: string } = {}
 ): Promise<SearchResult[]> {
+  return searchChunksMulti(db, [sourceId], query, opts);
+}
+
+export async function searchChunksMulti(
+  db: Database,
+  sourceIds: number[],
+  query: string,
+  opts: { topK?: number; embeddingModel?: string } = {}
+): Promise<SearchResult[]> {
   const topK = opts.topK ?? config.topK;
   const model = opts.embeddingModel ?? config.embeddingModel;
 
   const queryVector = new Float64Array(await embed(query, model));
   const keywords = extractKeywords(query);
-  const rows = getChunkRows(db, sourceId) as ChunkRow[];
-  const scored = rows.map((row) => scoreChunk(row, queryVector, keywords));
 
+  const allRows: ChunkRow[] = [];
+  for (const id of sourceIds) {
+    allRows.push(...(getChunkRows(db, id) as ChunkRow[]));
+  }
+
+  const scored = allRows.map((row) => scoreChunk(row, queryVector, keywords));
   return rankByRelevance(scored, topK);
 }

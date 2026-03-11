@@ -66,6 +66,10 @@ export function findSourceByName(db: Database, name: string): DocSource | null {
   return db.query("SELECT * FROM sources WHERE name = ?").get(name) as DocSource | null;
 }
 
+export function findSourcesByPrefix(db: Database, prefix: string): DocSource[] {
+  return db.query("SELECT * FROM sources WHERE name LIKE ? ORDER BY name").all(`${prefix}@%`) as DocSource[];
+}
+
 export function listSources(db: Database): DocSource[] {
   return db.query("SELECT * FROM sources ORDER BY created_at DESC").all() as DocSource[];
 }
