@@ -51,7 +51,7 @@ function showSpinner(): { stop: () => void } {
   };
 }
 
-async function collectStreamResponse(resp: Response): Promise<string> {
+async function streamToTerminal(resp: Response): Promise<string> {
   let full = "";
   const reader = resp.body!.getReader();
   const decoder = new TextDecoder();
@@ -66,11 +66,13 @@ async function collectStreamResponse(resp: Response): Promise<string> {
         const parsed = JSON.parse(line) as { message?: { content: string }; done: boolean };
         if (parsed.message?.content) {
           full += parsed.message.content;
+          process.stdout.write(parsed.message.content);
         }
       } catch {}
     }
   }
 
+  process.stdout.write("\n");
   return full;
 }
 
@@ -97,13 +99,7 @@ export async function chat(
     throw new Error(`Ollama chat failed (${resp.status}): ${body}`);
   }
 
-  const spinner = showSpinner();
-  const raw = await collectStreamResponse(resp);
-  spinner.stop();
-
-  const rendered = renderMarkdown(raw);
-  console.log(rendered);
-
+  const raw = await streamToTerminal(resp);
   return raw;
 }
 
