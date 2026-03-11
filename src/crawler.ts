@@ -62,7 +62,7 @@ function extractSameDomainLinks($: cheerio.CheerioAPI, pageUrl: string, baseUrl:
   return links;
 }
 
-async function fetchPage(url: string): Promise<string | null> {
+async function fetchPage(url: string): Promise<{ html: string; finalUrl: string } | null> {
   try {
     const resp = await fetch(url, {
       headers: { "User-Agent": USER_AGENT },
@@ -71,20 +71,20 @@ async function fetchPage(url: string): Promise<string | null> {
     });
 
     if (!resp.ok || !isHtmlResponse(resp)) return null;
-    return resp.text();
+    return { html: await resp.text(), finalUrl: resp.url };
   } catch {
     return null;
   }
 }
 
 export async function crawlPage(url: string, baseUrl: string): Promise<CrawlResult | null> {
-  const html = await fetchPage(url);
-  if (!html) return null;
+  const result = await fetchPage(url);
+  if (!result) return null;
 
-  const $ = cheerio.load(html);
+  const $ = cheerio.load(result.html);
   const title = extractTitle($, url);
+  const links = extractSameDomainLinks($, result.finalUrl, baseUrl);
   const content = extractContent($);
-  const links = extractSameDomainLinks($, url, baseUrl);
 
   if (content.length < config.minContentLength) return null;
 
